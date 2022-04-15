@@ -1,0 +1,47 @@
+use genecrab_report_static;
+call z1dataq('order_clean_final');
+call z1dataq('patients');
+-- 
+select * from person_clean_final;
+select * from order_clean_final;
+alter table order_clean_final add (is_lungcancer tinyint);
+-- 更新
+update order_clean_final c
+ inner join person_clean_final f
+on c.pid=f.pid
+set c.is_lungcancer= f.is_lungcancer
+;  -- 30000
+select c.order_table_id, c.pid,c.excluded_by_hospital,c.is_lungcancer 
+from order_clean_final c
+where c.excluded_by_hospital=0 
+or c.is_lungcancer=0; -- 75
+select * from ngs_test_clean_final;
+select report_type,nucleic_acid,reference_genome,pipeline_version from ngs_test_clean_final
+group by report_type,nucleic_acid,reference_genome,pipeline_version;
+-- 查数据一致性
+select * from ngs_test_clean_final
+where order_table_id not in
+(select order_Table_id  from order_clean_final);
+;
+-- 加排除flag
+alter table ngs_test_clean_final add (excluded_new tinyint);
+select * from ngs_test_clean_final 
+where order_table_id
+in
+(select c.order_table_id
+from order_clean_final c
+where c.excluded_by_hospital=0 
+or c.is_lungcancer=0); -- 81
+update ngs_test_clean_final n
+set n.excluded_new=0
+where n.order_table_id
+in
+(select c.order_table_id
+from order_clean_final c
+where c.excluded_by_hospital=0 
+or c.is_lungcancer=0); -- 81
+select * from ngs_test_clean_final n -- 35992
+ where n.excluded_new is null; -- 35911
+update ngs_test_clean_final n
+set n.excluded_new=1
+where n.excluded_new is null; -- 35911
