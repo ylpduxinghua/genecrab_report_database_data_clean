@@ -96,7 +96,7 @@ def main():
         result_new.append(tmp)
 
     # 创建ngs样本信息表
-    conn = my_database_conn()
+    conn = get_database_conn()
     tils_sample_info_sql = '''create table tils_sample_information_clean_final (
         id int(10) not null auto_increment,
         report_tils_table_id int(10) unsigned not null comment 'report_tils表id',
@@ -121,7 +121,7 @@ def main():
     conn.close()
 
     # 插入数据
-    conn = my_database_conn()
+    conn = get_database_conn()
     cur = conn.cursor()
     insert_sql = f'''insert into tils_sample_information_clean_final (report_tils_table_id, reports_table_id, order_table_id, sample_id, sample_name,
             received_at, vitro_at, tumor_cd8, tumor_pd1, tumor_cd8_pd1,

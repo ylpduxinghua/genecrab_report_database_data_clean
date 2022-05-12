@@ -158,7 +158,7 @@ def main():
 
 
     # 创建ngs样本信息表
-    conn = my_database_conn()
+    conn = get_database_conn()
     ngs_sample_info_sql = '''create table ngs_sample_information_clean_final (
         id int(10) not null auto_increment,
         report_sample_table_id int(10) unsigned not null comment 'report_samples表id',
@@ -172,7 +172,7 @@ def main():
         laterality varchar(255) default null comment '样本侧性',
         received_at timestamp not null comment '收样日期',
         vitro_at timestamp not null comment '采样日期',
-        analysis_time timestamp default null comment '分析日期',
+        analysis_time timestamp comment '分析日期',
         panel_name varchar(255) not null comment 'panel名称',
         created_at timestamp not null comment '建表日期',
         lot_number tinyint(4) not null comment '清洗批次信息',
@@ -186,7 +186,7 @@ def main():
 
 
     # 插入数据
-    conn = my_database_conn()
+    conn = get_database_conn()
     cur = conn.cursor()
     insert_sql = f'''insert into ngs_sample_information_clean_final (report_sample_table_id, reports_table_id, order_table_id, sample_id, sample_short_id,
             sample_name, body_part_name, body_site_name, laterality, received_at,

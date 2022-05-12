@@ -80,7 +80,7 @@ def main():
         result_new.append(tmp)
 
     # 创建ngs样本信息表
-    conn = my_database_conn()
+    conn = get_database_conn()
     pd_l1_sample_info_sql = '''create table pd_l1_sample_information_clean_final (
         id int(10) not null auto_increment,
         pd_l1_report_samples_table_id int(10) unsigned not null comment 'pd_l1_report_samples表id',
@@ -102,7 +102,7 @@ def main():
 
 
     # 插入数据
-    conn = my_database_conn()
+    conn = get_database_conn()
     cur = conn.cursor()
     insert_sql = f'''insert into pd_l1_sample_information_clean_final (pd_l1_report_samples_table_id, 
         reports_table_id, order_table_id, sample_id, sample_name, received_at, 
