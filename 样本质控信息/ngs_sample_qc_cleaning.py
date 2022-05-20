@@ -201,8 +201,6 @@ def main():
 
 
     # 插入数据
-    print(result_new[0])
-    print(len(result_new[0]))
     conn = get_database_conn()
     cur = conn.cursor()
     insert_sql = f'''insert into ngs_sample_qc_clean_final (reports_table_id, sample_id, tumor_cell_proportion, total_extraction_amount, total_library_amount,
