@@ -1,7 +1,7 @@
 '''本脚本用于清洗订单表，生成order_clean_final表，目前不能再运行，因为炙萍姐在生成表中增加了一列，再次运行会覆盖该表'''
 import sys
 sys.path.append('/Users/duxinghua/臻和工作/数据融合项目/肺癌商检项目/数据清洗脚本')
-from mysql_module import get_database_conn, my_database_conn, query_database, get_hospital_mapping_dict, create_table, insert_table_info
+from mysql_module import get_database_conn, my_database_conn, query_database, get_hospital_mapping_dict, create_table, insert_table_many_info
 from datetime import datetime
 
 
@@ -25,7 +25,7 @@ def main():
     conn.close()
     
     # 订单信息处理
-    result_new = []
+    result_1 = []
     hospital_mapping_dict = get_hospital_mapping_dict()
 
     for tuple in result:
@@ -47,25 +47,30 @@ def main():
 
         seller = tuple[3]
         product_type_name = tuple[4]
-        submission_date = tuple[5]
+        submission_date = tuple[5].strftime('%Y-%m-%d %H:%M:%S')
 
         order_table_id = tuple[6]
         pid = tuple[7]
 
         # 建表时间
-        created_at = datetime.now()
+        created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
         lot_number = 0
         lot_date_range = '>=2019-06-01,<=2021-12-31'
+        tmp = [order_table_id, order_id, pid, hospital_new, doctor_new, seller, product_type_name, submission_date,
+            excluded_by_hospital, created_at, lot_number, lot_date_range]
 
-        tmp = [order_id, hospital_new, doctor_new, seller, product_type_name,
-            submission_date, excluded_by_hospital, order_table_id, pid, created_at,
-            lot_number, lot_date_range]
-        result_new.append(tmp)
+        result_1.append(tmp)
+        
+    result_new = []
+    for tmp in result_1:
+        result_new.append([ele if ele is None else str(ele) for ele in tmp])
+
 
     # 创建订单表
     conn = get_database_conn()
-    order_table_sql = '''create table order_clean_final (
-        id int(10) unsigned not null,
+    order_table_sql = '''create table order_clean_final_2 (
+        id int(10) not null auto_increment,
         order_table_id int(10) unsigned not null comment '原始订单表id',
         order_id varchar(255) not null comment '订单编号',
         pid varchar(255) not null comment '患者pid',
@@ -83,21 +88,30 @@ def main():
         unique (order_id)
     )'''
 
-    create_table(conn, 'order_clean_final', order_table_sql)
+    create_table(conn, 'order_clean_final_2', order_table_sql)
     conn.close()
 
     # 插入订单数据
     conn = get_database_conn()
     cur = conn.cursor()
-    n = 0 
-    for eles in result_new:
-        n += 1
-        info = f'''({n}, {eles[7]}, '{eles[0]}', '{eles[8]}', '{eles[1]}', '{eles[2]}', '{eles[3]}', 
-            '{eles[4]}', '{eles[5].strftime('%Y-%m-%d %H:%M:%S')}', {eles[6]}, 
-            '{eles[9].strftime('%Y-%m-%d %H:%M:%S')}', {eles[10]}, '{eles[11]}')'''
-        insert_sql = f'''insert into order_clean_final values {info}'''
-        insert_sql = insert_sql.replace("'None',", "null,")
-        insert_table_info(conn, cur, insert_sql)
+
+    insert_sql = f'''insert into order_clean_final_2 (
+                    order_table_id, order_id, pid, hospital, doctor,
+                    seller, product_type_name, order_date, excluded_by_hospital, created_at,
+                    lot_number, lot_date_range) values (%s, %s, %s, %s, %s,
+                                            %s, %s, %s, %s, %s,
+                                            %s, %s)'''
+    insert_table_many_info(conn, cur, insert_sql, result_new)
+
+    # n = 0 
+    # for eles in result_new:
+    #     n += 1
+    #     info = f'''({n}, {eles[7]}, '{eles[0]}', '{eles[8]}', '{eles[1]}', '{eles[2]}', '{eles[3]}', 
+    #         '{eles[4]}', '{eles[5].strftime('%Y-%m-%d %H:%M:%S')}', {eles[6]}, 
+    #         '{eles[9].strftime('%Y-%m-%d %H:%M:%S')}', {eles[10]}, '{eles[11]}')'''
+    #     insert_sql = f'''insert into order_clean_final_2 values {info}'''
+    #     insert_sql = insert_sql.replace("'None',", "null,")
+    #     insert_table_info(conn, cur, insert_sql)
     cur.close()
     conn.close()
 
@@ -127,7 +141,9 @@ def clean_doctor(doctor):
         '岳': None,
         '王': None,
         '凌': None,
-        '未知': None
+        '未知': None,
+        '.曹军':'曹军',
+        '.肖奎':'肖奎'
     }
     if '（' in doctor and (not doctor in mapping_fields):
         doctor = doctor.split('（')[0]
@@ -139,5 +155,5 @@ def clean_doctor(doctor):
 
 
 if __name__ == '__main__':
-    # main()
+    main()
     # query_doctor()

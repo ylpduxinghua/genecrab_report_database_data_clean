@@ -85,6 +85,17 @@ def insert_table_many_info(conn, cur, sql, args):
         raise e
 
 
+def update_table(conn, cur, sql):
+    try:
+        # 执行sql语句
+        cur.execute(sql)
+        # 提交到数据库执行
+        conn.commit()
+    except Exception as e:
+        # 如果发生错误则回滚
+        conn.rollback()
+        raise e
+
 
 def get_hospital_mapping_dict():
     conn = get_database_conn()

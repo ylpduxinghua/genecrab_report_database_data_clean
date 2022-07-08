@@ -24,9 +24,23 @@ def get_sample_source_dict(in_file):
         f.readline()
         for line in f:
             line_list = line.rstrip().split('\t')
+            tmp = line_list[2]
+            tmp = tmp.strip('"')
+            line_list[2] = tmp
             line_list = [None if ele == 'NULL' else ele for ele in line_list]
             source_dict[line_list[0] + line_list[1]] = (line_list[2], line_list[3])
     return source_dict
+
+
+def get_specific_id_body_part_name_dict(infile):
+    specific_id_body_part_name_dict = {}
+    with open(infile) as f:
+        for line in f:
+            line_list = line.strip('\n').split('\t')
+            if line_list[5] in ['无法判断', 'NULL']:
+                line_list[5] = None
+            specific_id_body_part_name_dict[line_list[1]] = line_list[5]
+    return specific_id_body_part_name_dict
 
 
 def main():
@@ -41,9 +55,12 @@ def main():
     zhuanyizao_source_file = '/Users/duxinghua/臻和工作/数据融合项目/肺癌商检项目/数据清洗规则/转移部位/zhuanyizao_dict_20220429.tsv'
     # 未知字典表
     weizhi_source_file = '/Users/duxinghua/臻和工作/数据融合项目/肺癌商检项目/数据清洗规则/转移部位/weizhi_dict_20220429.tsv'
+    id_and_body_part_name_file = '/Users/duxinghua/臻和工作/数据融合项目/肺癌商检项目/数据清洗规则/转移部位/ngs_sample_information_79.txt'
     yuanfazao_dict = get_sample_source_dict(yuanfazao_source_file)
     zhuanyizao_dict = get_sample_source_dict(zhuanyizao_source_file)
     weizhi_dict = get_sample_source_dict(weizhi_source_file)
+    specific_id_body_part_name_dict = get_specific_id_body_part_name_dict(id_and_body_part_name_file)
+
 
     # 获取原始样本信息
     conn = get_database_conn()
@@ -107,25 +124,35 @@ def main():
         else:
             print('sample_name error!')
 
+        
+
         # 样本来源，样本解剖部位，样本侧性
         body_site_name = None
         laterality = None
         label = body_part_name + metastasis_target
-        if label in yuanfazao_dict:
-            body_site_name = yuanfazao_dict[label][0]
-            laterality = yuanfazao_dict[label][1]
-        elif label in zhuanyizao_dict:
-            body_site_name = zhuanyizao_dict[label][0]
-            laterality = zhuanyizao_dict[label][1]
-        elif label in weizhi_dict:
-            body_site_name = weizhi_dict[label][0]
-            laterality = weizhi_dict[label][1]
-        else:
-            print('存在错误')
+        tmp_list = ['切片', '手术组织(福尔马林)', '穿刺组织(保存液)', '穿刺组织(冷冻)',
+            '穿刺组织(福尔马林)', '穿刺组织(福尔马林+保存液)', '腊卷', '蜡块']
+        if sample_name in tmp_list:
+            if label in yuanfazao_dict:
+                body_site_name = yuanfazao_dict[label][0]
+                laterality = yuanfazao_dict[label][1]
+            elif label in zhuanyizao_dict:
+                body_site_name = zhuanyizao_dict[label][0]
+            elif label in weizhi_dict:
+                body_site_name = weizhi_dict[label][0]
+            else:
+                print('存在错误')
 
+        if report_samples_table_id in specific_id_body_part_name_dict:
+            body_part_name = specific_id_body_part_name_dict[report_samples_table_id]
+        if body_part_name == '转移灶':
+            laterality = None
+        
         # body_part_name 
-        if body_part_name in ['', '未知', '未选择']:
+        if body_part_name in ['', '未知', '未选择'] or sample_name not in tmp_list or body_part_name is None:
             body_part_name = None
+            body_site_name = None
+            laterality = None
 
         # 分析日期
         analysis_time = None
@@ -172,7 +199,7 @@ def main():
         laterality varchar(255) default null comment '样本侧性',
         received_at timestamp not null comment '收样日期',
         vitro_at timestamp not null comment '采样日期',
-        analysis_time timestamp comment '分析日期',
+        analysis_time datetime default null comment '分析日期',
         panel_name varchar(255) not null comment 'panel名称',
         created_at timestamp not null comment '建表日期',
         lot_number tinyint(4) not null comment '清洗批次信息',

@@ -110,6 +110,7 @@ def main():
                                         (df.loc[:,'tumor_cell_proportion'] == 'N/A')|
                                         (df.loc[:,'tumor_cell_proportion'] == '')] = np.nan
     df.loc[:, 'tumor_cell_proportion'][df.loc[:,'tumor_cell_proportion'] == '未见肿瘤细胞'] = '0%'
+    df.loc[:, 'tumor_cell_proportion'][df.loc[:,'tumor_cell_proportion'] == '40-60%'] = '40%-60%'
 
     # 序列回帖比率
     df.loc[:, 'mapping_ratio'] = df.loc[:, 'mapping_ratio'].apply(deal_percent_ratio)

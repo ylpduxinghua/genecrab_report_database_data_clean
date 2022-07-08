@@ -1,4 +1,6 @@
-'''本脚本是在炙萍姐增加了excluded_new后， 修改pipeline_version字段'''
+'''本脚本是在炙萍姐增加了excluded_new后， 修改pipeline_version字段
+后来又修改了ngs_test_cleaning.py脚本，并覆盖了该脚本的结果
+'''
 import sys
 from datetime import datetime
 sys.path.append('/Users/duxinghua/臻和工作/数据融合项目/肺癌商检项目/数据清洗脚本')

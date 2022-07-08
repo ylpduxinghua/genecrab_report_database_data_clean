@@ -36,7 +36,9 @@ def main():
                 vitro_at,
                 antibody 
             FROM
-                pd_l1_report_samples;'''
+                pd_l1_report_samples
+            WHERE
+	            patient_id IN ( SELECT id FROM patients );;'''
     result = query_database(conn, sql)
     conn.close()
 
@@ -60,6 +62,9 @@ def main():
         else:
             print(sample_name)
             print('sample_name error!')
+
+        if sample_id == 'R-191225-485253-FFXFFG-534957-PDL1':
+            sample_name = '手术组织(福尔马林+保存液)'
 
         # 建表时间 清洗批次信息 清洗数据的时间范围
         created_at = datetime.now()
