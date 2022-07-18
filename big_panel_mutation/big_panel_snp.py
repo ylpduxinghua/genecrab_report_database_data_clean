@@ -9,7 +9,7 @@ import re
 
 def main():
     conn = get_database_conn()
-    sql = '''SELECT
+    sql = '''SELECT distinct
                 report_id,
                 report_sample_id,
                 gene,

@@ -23,27 +23,11 @@ def main():
                 info.msh6_positive,-- MSH6结果
                 info.pms2_positive,-- PMS2结果
                 info.mmr_result -- 判读结果
+                
             FROM
-                report_pd_l1_info info
-                inner JOIN (
-                SELECT
-                    s.id 
-                FROM
-                    pd_l1_report_samples s
-                    INNER JOIN (
-                    SELECT
-                        r.id 
-                    FROM
-                        reports r
-                        INNER JOIN patients p ON r.patient_id = p.id 
-                    WHERE
-                        r.is_published = 1 -- 已发布
-                        AND r.is_invalid = 0 -- 有效
-                        AND date( r.published_at ) >= '2017-12-01' -- 取报告库正式上线后的数据
-                        AND date( r.published_At ) <= '2021-09-01' 
-                        AND p.project_type_id = 2 -- 商检
-                    ) x ON s.report_id = x.id 
-                ) samples ON samples.id = info.pd_l1_report_sample_id;'''
+                report_pd_l1_info info 
+            WHERE
+                pd_l1_report_sample_id IN ( SELECT pd_l1_report_samples_table_id FROM pd_l1_sample_information_clean_final );'''
 
     result = query_database(conn, sql)
 
@@ -82,6 +66,7 @@ def main():
     df.loc[df.loc[:, 'pd_l1_immune_cell_positive_ratio'] == '', 'pd_l1_immune_cell_positive_ratio'] = np.nan
     df.loc[df.loc[:, 'pd_l1_cps'] == '', 'pd_l1_cps'] = np.nan
     df.loc[df.loc[:, 'tps_positive'] == '', 'tps_positive'] = np.nan
+    df.loc[df.loc[:, 'tps_positive'] == '合格', 'tps_positive'] = np.nan
     df.loc[df.loc[:, 'pd_1_immune_cell_positive_ratio'] == '', 'pd_1_immune_cell_positive_ratio'] = np.nan
     df.loc[df.loc[:, 'mlh1_positive'] == '', 'mlh1_positive'] = np.nan
     df.loc[df.loc[:, 'msh2_positive'] == '', 'msh2_positive'] = np.nan

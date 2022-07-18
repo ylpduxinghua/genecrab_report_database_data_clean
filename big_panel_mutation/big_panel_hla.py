@@ -10,19 +10,26 @@ import re
 def main():
     conn = get_database_conn()
     sql = '''SELECT DISTINCT
-                h.id,
-                h.report_id,
-                h.report_sample_id,
-                h.gene,
-                h.allele,
-                h.zygosity,
-                h.super_type 
+                x.id, x.report_id, x.report_sample_id, x.gene, x.allele, x.zygosity, x.super_type
             FROM
-                report_hla_supertypes h
-                INNER JOIN report_samples s ON h.report_sample_id = s.id 
-            WHERE
-                h.selected = 1 
-                AND s.sample_name IN ( '血细胞', '口腔拭子' );'''
+                (
+                SELECT
+                    h.* 
+                FROM
+                    report_hla_supertypes h
+                    inner JOIN report_samples r ON h.report_sample_id = r.id 
+                WHERE
+                    h.report_id IN ( SELECT report_id FROM report_hla_supertypes GROUP BY report_id HAVING count( 1 )> 3 ) 
+                    AND r.sample_attribute = 'BLOOD' 
+                    AND h.selected = 1 UNION ALL
+                SELECT
+                    h.* 
+                FROM
+                    report_hla_supertypes h
+                WHERE
+                    h.report_id IN ( SELECT report_id FROM report_hla_supertypes GROUP BY report_id HAVING count( 1 )= 3 ) 
+                    AND h.selected = 1 
+                ) x;'''
 
     result = query_database(conn, sql)
 

@@ -81,7 +81,7 @@ def main():
     result = query_database(conn, sql)
     sql_panel = 'select * from dict_panel;'
     result_panel = query_database(conn, sql_panel)
-    sql_sample_qc = 'select sample_id, created_at from sample_qc;'
+    sql_sample_qc = 'select sample_id, created_at from sample_qc_2;'
     result_sample_qc = query_database(conn, sql_sample_qc)
     conn.close()
 

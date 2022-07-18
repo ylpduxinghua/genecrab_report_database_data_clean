@@ -49,7 +49,7 @@ def main():
         report_id = tuple[4]
         order_table_id = tuple[5]
 
-        if pipeline_version.startswith('v'):
+        if not pipeline_version.startswith('v'):
             pipeline_version = None
 
         nucleic_acid = None

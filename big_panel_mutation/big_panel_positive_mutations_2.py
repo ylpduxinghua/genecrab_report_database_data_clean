@@ -11,52 +11,79 @@ def main():
     # 获取数据库snv信息 140240
     conn = get_database_conn()
     sql = '''SELECT DISTINCT
-                        r.id,
-                        r.report_id,
-                        r.gene,
-                        r.mutation_level_id,
-                        r.data_type,
-                        r.mutation_g_reviewed,
-                        r.exon,
-                        r.mutation_c,
-                        r.mutation_p,
-                        r.transcript,
-                        r.type_specific,
-                        r.sift_score,
-                        r.sift,
-                        r.polyphen2,
-                        r.is_germline,
-                        r.zygosity,
-                        r.clinsig,
-                        r.ExAC_ALL,
-                        r.ExAC_EAS,
-                        r.gnomAD_genome_ALL,
-                        r.gnomAD_genome_EAS,
-                        r.1000g2015aug_all,
-                        r.1000g2015aug_eas,
-                        r.cnv_result,
-                        r.cytoband,
-                        r.display_mutation,
-                        r.fusion_gene1,
-                        r.fusion_gene2,
-                        r.exon1,
-                        r.exon2,
-                        d.chromosome,
-                        d.coordinate,
-                        d.ref,
-                        d.alt,
-                        f.chromosome1,
-                        f.chromosome2,
-                        f.transcript1,
-                        f.transcript2,
-                        f.fusion_type,
-                        f.pair_order
-                    FROM
-                        report_mutations r
-                        left JOIN report_mutation_desc d ON r.id = d.report_mutation_id 
-                        left join report_mutation_fusion_desc f on r.id = f.report_mutation_id
-                    WHERE
-                        r.selected = 1;'''
+                r.id,
+                r.report_id,
+                r.gene,
+            CASE
+                    ifnull( x.mutation_level, r.mutation_level_id ) 
+                    WHEN '0' THEN
+                    3 
+                    WHEN 1 THEN
+                    1 
+                    WHEN 2 THEN
+                    2 ELSE NULL 
+                END AS mutation_level_id,
+                r.data_type,
+                r.mutation_g_reviewed,
+                r.exon,
+                r.mutation_c,
+                r.mutation_p,
+                r.transcript,
+                r.type_specific,
+                r.sift_score,
+                r.sift,
+                r.polyphen2,
+                r.is_germline,
+                r.zygosity,
+                r.clinsig,
+                r.ExAC_ALL,
+                r.ExAC_EAS,
+                r.gnomAD_genome_ALL,
+                r.gnomAD_genome_EAS,
+                r.1000g2015aug_all,
+                r.1000g2015aug_eas,
+                r.cnv_result,
+                r.cytoband,
+                r.display_mutation,
+                r.fusion_gene1,
+                r.fusion_gene2,
+                r.exon1,
+                r.exon2,
+                d.chromosome,
+                d.coordinate,
+                d.ref,
+                d.alt,
+                f.chromosome1,
+                f.chromosome2,
+                f.transcript1,
+                f.transcript2,
+                f.fusion_type,
+                f.pair_order 
+            FROM
+                report_mutations r
+                LEFT JOIN report_mutation_desc d ON r.id = d.report_mutation_id
+                LEFT JOIN report_mutation_fusion_desc f ON r.id = f.report_mutation_id
+                LEFT JOIN (
+                SELECT
+                    report_id,
+                    mutation_id,
+                IF
+                    (
+                        SUBSTR( GROUP_CONCAT( DISTINCT mutation_level_id ), 1, 1 ) < SUBSTR( GROUP_CONCAT( DISTINCT mutation_level_id ), -1, 1 ),
+                        SUBSTR( GROUP_CONCAT( DISTINCT mutation_level_id ), 1, 1 ),
+                    SUBSTR( GROUP_CONCAT( DISTINCT mutation_level_id ), -1, 1 )) AS mutation_level 
+                FROM
+                    report_mutation_targeted_drugs 
+                WHERE
+                    selected = 1 
+                    AND is_valid = 1 
+                GROUP BY
+                    report_id,
+                    mutation_id 
+                ) x ON r.id = x.mutation_id 
+                AND r.report_id = x.report_id 
+            WHERE
+                r.selected = 1;'''
     result = query_database(conn, sql)
 
     conn.close()
@@ -129,6 +156,8 @@ def main():
     # sift功能预测分值
     df.loc[df.loc[:, 'sift_score'] == '', 'sift_score'] = np.nan
     df.loc[df.loc[:, 'sift_score'] == '.', 'sift_score'] = '0'
+    df.loc[df.loc[:, 'sift_score'] == 'D', 'sift_score'] = 'Deleterious'
+    df.loc[df.loc[:, 'sift_score'] == 'T', 'sift_score'] = 'Tolerated'
     # 保留两位小数
     df.loc[:, 'sift_score'] = df.loc[:, 'sift_score'].apply(keep_two_digit)
 
@@ -137,6 +166,9 @@ def main():
 
     # polyphen2预测结果
     df.loc[df.loc[:, 'polyphen2_predict'].isin(['.', '-']), 'polyphen2_predict'] = np.nan
+    df.loc[df.loc[:, 'polyphen2_predict'] == 'D', 'polyphen2_predict'] = 'Probably damaging'
+    df.loc[df.loc[:, 'polyphen2_predict'] == 'B', 'polyphen2_predict'] = 'Benign'
+    df.loc[df.loc[:, 'polyphen2_predict'] == 'P', 'polyphen2_predict'] = 'Possibly damaging'
 
     # 是否胚系
     df.loc[:, 'genomic_source'] = df.loc[:, 'genomic_source'].map({0:'体细胞', 1:'胚系'})
